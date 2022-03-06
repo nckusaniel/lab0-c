@@ -16,11 +16,32 @@
  */
 struct list_head *q_new()
 {
-    return NULL;
+    struct list_head *node = malloc(sizeof(struct list_head));
+    if (!node) {
+        return NULL;
+    }
+    INIT_LIST_HEAD(node);
+    return node;
+    // malloc head call node
+    // no space return node
+    // node point to itself in both pre and next
 }
 
 /* Free all storage used by queue */
-void q_free(struct list_head *l) {}
+void q_free(struct list_head *l)
+{
+    element_t *entry, *safe;
+    if (!l)
+        return;
+    list_for_each_entry_safe (entry, safe, l, list)
+        q_release_element(entry);
+    free(l);
+    //宣告兩個element_t指標（enrty在前，safe在後）
+    //判斷指標l是否為空的
+    //利用list_for_each_entry_safe，探索l串列之element_t結構
+    //並利用q_release_element 釋放entry
+    //釋放l
+}
 
 /* Attempt to insert element at head of queue.
  * Return true if successful.
@@ -30,7 +51,20 @@ void q_free(struct list_head *l) {}
  */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    if (head == NULL)
+        return false;
+    element_t *q = malloc(sizeof(element_t));
+    if (!q)
+        return false;
+    //配置value字串所需的空間
+    q->value = malloc(sizeof(strlen(s + 1)));
+    //將s複製給value
+    strncpy(q->value, s, strlen(s) + 1);
+    list_add(&q->list, head);
     return true;
+    //宣告q準備插入queue
+    //判斷q存不存在
+    //利用list_add來插入資料
 }
 
 /* Attempt to insert element at tail of queue.
@@ -41,6 +75,14 @@ bool q_insert_head(struct list_head *head, char *s)
  */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    if (!head)
+        return false;
+    element_t *q = malloc(sizeof(element_t));
+    if (!q)
+        return false;
+    q->value = malloc(sizeof(strlen(s + 1)));
+    strncpy(q->value, s, (strlen(s) + 1));
+    list_add_tail(&q->list, head);
     return true;
 }
 
@@ -57,9 +99,25 @@ bool q_insert_tail(struct list_head *head, char *s)
  * Reference:
  * https://english.stackexchange.com/questions/52508/difference-between-delete-and-remove
  */
+
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    //判斷queue是否有元素
+    if (!head || list_empty(head))
+        return NULL;
+
+    // target指向第一個點
+    element_t *target = list_entry(head->next, element_t, list);
+
+    //移除taget
+    list_del_init(head->next);
+
+    // target的value 非空且被移除（初始化）就將value的資料給sp
+    if (sp != NULL) {
+        sp = malloc(sizeof(strlen(target->value + 1)));
+        strncpy(sp, target->value, strlen(target->value) + 1);
+    }
+    return target;
 }
 
 /* Attempt to remove element from tail of queue.
