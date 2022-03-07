@@ -14,6 +14,7 @@
 /* Create empty queue.
  * Return NULL if could not allocate space.
  */
+
 struct list_head *q_new()
 {
     struct list_head *node = malloc(sizeof(struct list_head));
@@ -114,8 +115,8 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 
     // target的value 非空且被移除（初始化）就將value的資料給sp
     if (sp != NULL) {
-        sp = malloc(sizeof(strlen(target->value + 1)));
-        strncpy(sp, target->value, strlen(target->value) + 1);
+        strncpy(sp, target->value, bufsize - 1);
+        // sp[bufsize]="\0";
     }
     return target;
 }
@@ -125,7 +126,21 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
  */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    //判斷queue是否有元素
+    if (!head || list_empty(head))
+        return NULL;
+
+    // target指向最後一個點（head->prev）
+    element_t *target = list_entry(head, element_t, list);
+
+    //移除taget
+    list_del_init(head->next);
+
+    // target的value 非空且被移除（初始化）就將value的資料給sp
+    if (sp != NULL) {
+        strncpy(sp, target->value, bufsize - 1);
+    }
+    return target;
 }
 
 /* WARN: This is for external usage, don't modify it
@@ -162,7 +177,19 @@ int q_size(struct list_head *head)
  */
 bool q_delete_mid(struct list_head *head)
 {
-    // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    // https:leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    if (!head || list_empty(head))
+        return false;
+    //宣告快慢指標
+    struct list_head *fast, *slow;
+    for (fast = slow = head->next; fast->next != head && fast != head;
+         slow = slow->next, fast = fast->next->next) {
+    }
+
+    //找到中間點（慢指標），移除後釋放
+    element_t *mid = list_entry(slow, element_t, list);
+    list_del_init(slow);
+    q_release_element(mid);
     return true;
 }
 
@@ -177,6 +204,33 @@ bool q_delete_mid(struct list_head *head)
 bool q_delete_dup(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    if (!head || list_empty(head)) {
+        return false;
+    }
+    //計算這個node殺了幾次
+    int count = 0;
+    // 宣告兩個指向現在跟下一個list
+    struct list_head *first, *second;
+    //探訪所有node
+    list_for_each_safe (first, second, head) {
+        // list轉換成struct
+        element_t *entry = list_entry(first, element_t, list);
+        element_t *safe = list_entry(second, element_t, list);
+        //如果now跟next的字串內容相同，殺了first，並釋放，注意seocnd不能等於head沒value會錯誤
+        if (second != head && 0 == strcmp(entry->value, safe->value)) {
+            list_del(first);
+            q_release_element(entry);
+            //砍了一次
+            count++;
+            //字串跟下一個點不相同，判斷之前有沒有砍過
+        } else {
+            if (count > 0) {
+                list_del(first);
+                q_release_element(entry);
+                count = 0;
+            }
+        }
+    }
     return true;
 }
 
@@ -184,6 +238,16 @@ bool q_delete_dup(struct list_head *head)
 void q_swap(struct list_head *head)
 {
     // https://leetcode.com/problems/swap-nodes-in-pairs/
+    if (!head || list_empty(head))
+        return;
+    struct list_head *now, *next1;
+    // for兩個滿足一個是&&
+    for (now = head->next, next1 = now->next; now->next != head && now != head;
+         now = now->next, next1 = now->next) {
+        //刪除目前，讓n1變到前面，在將now插入n1後
+        list_del_init(now);
+        list_add(now, next1);
+    }
 }
 
 /* Reverse elements in queue
