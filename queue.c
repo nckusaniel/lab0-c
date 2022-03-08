@@ -52,20 +52,31 @@ void q_free(struct list_head *l)
  */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    //檢查head
     if (head == NULL)
         return false;
-    element_t *q = malloc(sizeof(element_t));
-    if (!q)
+    //宣告element來存入s字串
+    element_t *n = malloc(sizeof(element_t));
+    //判斷是否存在
+    if (!n) {
         return false;
-    //配置value字串所需的空間
-    q->value = malloc(sizeof(strlen(s + 1)));
-    //將s複製給value
-    strncpy(q->value, s, strlen(s) + 1);
-    list_add(&q->list, head);
+    }
+    //給新節點n的value配置空間
+    //這樣錯n->value =malloc(sizeof(strlen(s)+1));
+    n->value = malloc(strlen(s) + 1);
+    //要判斷n=>value是否存在不然下面可能異味
+    if (!n->value) {
+        free(n);  //不佳這個會出現Segmentation fault occurred.  You dereferenced
+                  // a NULL or invalid pointer
+        return false;
+    }
+    //複製資料
+    //因為strcpy可能造成益位因此使用strncpy，且
+    // strncpy不會自動在目的陣列加上空字元 但s_ele已加入，所以不用管
+    strncpy(n->value, s, strlen(s) + 1);
+    //將n加入頭
+    list_add(&n->list, head);
     return true;
-    //宣告q準備插入queue
-    //判斷q存不存在
-    //利用list_add來插入資料
 }
 
 /* Attempt to insert element at tail of queue.
@@ -76,14 +87,19 @@ bool q_insert_head(struct list_head *head, char *s)
  */
 bool q_insert_tail(struct list_head *head, char *s)
 {
-    if (!head)
+    if (head == NULL)
         return false;
-    element_t *q = malloc(sizeof(element_t));
-    if (!q)
+    element_t *n = malloc(sizeof(element_t));
+    if (!n) {
         return false;
-    q->value = malloc(sizeof(strlen(s + 1)));
-    strncpy(q->value, s, (strlen(s) + 1));
-    list_add_tail(&q->list, head);
+    }
+    n->value = malloc(strlen(s) + 1);
+    if (!n->value) {
+        free(n);
+        return false;
+    }
+    strncpy(n->value, s, strlen(s) + 1);
+    list_add_tail(&n->list, head);
     return true;
 }
 
@@ -109,14 +125,12 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 
     // target指向第一個點
     element_t *target = list_entry(head->next, element_t, list);
-
     //移除taget
     list_del_init(head->next);
-
     // target的value 非空且被移除（初始化）就將value的資料給sp
     if (sp != NULL) {
         strncpy(sp, target->value, bufsize - 1);
-        // sp[bufsize]="\0";
+        sp[bufsize - 1] = '\0';
     }
     return target;
 }
@@ -139,6 +153,7 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
     // target的value 非空且被移除（初始化）就將value的資料給sp
     if (sp != NULL) {
         strncpy(sp, target->value, bufsize - 1);
+        sp[bufsize - 1] = '\0';
     }
     return target;
 }
@@ -280,6 +295,7 @@ void q_reverse(struct list_head *head)
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
+
 
 void q_sort(struct list_head *head)
 {
