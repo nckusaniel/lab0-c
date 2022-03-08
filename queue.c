@@ -271,23 +271,23 @@ void q_swap(struct list_head *head)
  * (e.g., by calling q_insert_head, q_insert_tail, or q_remove_head).
  * It should rearrange the existing ones.
  */
+
+/* Reverse elements in queue
+ * No effect if q is NULL or empty
+ * This function should not allocate or free any list elements
+ * (e.g., by calling q_insert_head, q_insert_tail, or q_remove_head).
+ * It should rearrange the existing ones.
+ */
+//從頭開始刪除元素，插入頭
 void q_reverse(struct list_head *head)
 {
-    struct list_head *node, *first, *second;
-    // n紀錄總共多少點
-    int n = 0;
-    int j;
-    list_for_each (node, head)
-        n++;
-    //第一層for迴圈代表已經放了幾個點到最後面執行n-1次即可
-    for (int i = 1; i < n; i++) {
-        //第二層執行左右交換，並且每次可以根據i來減少交換次數
-        for (first = head->next, second = first->next, j = n; i < j;
-             j--, second = first->next) {
-            //刪除first加入其後面
-            list_del_init(first);
-            list_add(first, second);
-        }
+    //要考慮head為null的情況
+    if (!head || list_empty(head)) {
+        return;
+    }
+    struct list_head *node, *safe;
+    list_for_each_safe (node, safe, head) {
+        list_move(node, head);
     }
 }
 
@@ -295,7 +295,6 @@ void q_reverse(struct list_head *head)
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-
 
 void q_sort(struct list_head *head)
 {
