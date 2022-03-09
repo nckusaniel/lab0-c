@@ -298,25 +298,30 @@ void q_reverse(struct list_head *head)
 
 void q_sort(struct list_head *head)
 {
-    struct list_head *node, *first, *second;
-    // n紀錄總共多少點
-    int n = 0;
-    int j;
-    list_for_each (node, head)
-        n++;
-    //第一層for迴圈代表已經放了幾個點到最後面執行n-1次即可
-    for (int i = 1; i < n; i++) {
-        //第二層執行左右交換，並且每次可以根據i來減少交換次數
-        for (first = head->next, second = first->next, j = n; i < j;
-             j--, second = first->next) {
-            //利用element取value
-            element_t *current = list_entry(first, element_t, list);
-            element_t *current_next = list_entry(second, element_t, list);
-            // value大的放後面
-            if (strlen(current->value) > strlen(current_next->value)) {
-                list_del_init(first);
-                list_add(first, second);
-            }
-        }
+    struct list_head list_less, list_greater;
+    element_t *pivot;
+    element_t *item = NULL, *is = NULL;
+
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+
+    INIT_LIST_HEAD(&list_less);
+    INIT_LIST_HEAD(&list_greater);
+
+    pivot = list_first_entry(head, element_t, list);
+    list_del(&pivot->list);
+
+    list_for_each_entry_safe (item, is, head, list) {
+        if (strcmp(item->value, pivot->value) < 0)
+            list_move_tail(&item->list, &list_less);
+        else
+            list_move(&item->list, &list_greater);
     }
+
+    q_sort(&list_less);
+    q_sort(&list_greater);
+
+    list_add(&pivot->list, head);
+    list_splice(&list_less, head);
+    list_splice_tail(&list_greater, head);
 }
