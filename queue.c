@@ -296,32 +296,94 @@ void q_reverse(struct list_head *head)
  * element, do nothing.
  */
 
+//將資料合併
+struct list_head *merge_twolist(struct list_head *list1,
+                                struct list_head *list2)
+{
+    struct list_head *tmp = malloc(sizeof(struct list_head));
+    struct list_head *head = tmp;
+    while (list1 && list2) {
+        //宣告兩個點取用value來比大小
+        element_t *l1_entry = list_entry(list1, element_t, list);
+        element_t *l2_entry = list_entry(list2, element_t, list);
+        //比大小<0代表l1小
+        if (strcmp(l1_entry->value, l2_entry->value) < 0) {
+            //記得要讓l1只回去tmp保持雙向鍊結
+            tmp->next = list1;
+            list1 = list1->next;
+        } else {
+            tmp->next = list2;
+            list2 = list2->next;
+        }
+        tmp = tmp->next;
+    }
+    //有一串列到底了，準備接另一串列尾巴
+    tmp->next = list1 ? list1 : list2;
+    return head->next;
+}
+//將資料切割（divide
+struct list_head *merge_cut(struct list_head *node1)
+{
+    //邊界條件
+    if (!node1 || !node1->next) {
+        return node1;
+    }
+    struct list_head *slow = node1, *fast = slow->next;
+    for (; fast && fast->next; fast = fast->next->next)
+        slow = slow->next;
+    // mid是新串列開頭
+    struct list_head *mid = slow->next;
+    slow->next = NULL;
+    struct list_head *left = merge_cut(node1);
+    struct list_head *right = merge_cut(mid);
+    return merge_twolist(left, right);
+}
+
+
 void q_sort(struct list_head *head)
 {
-    struct list_head list_less, list_greater;
-    element_t *pivot;
-    element_t *item = NULL, *is = NULL;
-
+    //邊界條件
     if (!head || list_empty(head) || list_is_singular(head))
         return;
-
-    INIT_LIST_HEAD(&list_less);
-    INIT_LIST_HEAD(&list_greater);
-
-    pivot = list_first_entry(head, element_t, list);
-    list_del(&pivot->list);
-
-    list_for_each_entry_safe (item, is, head, list) {
-        if (strcmp(item->value, pivot->value) < 0)
-            list_move_tail(&item->list, &list_less);
-        else
-            list_move(&item->list, &list_greater);
+    //首先要將傳進來的head改變成單向的linklist
+    head->prev->next = NULL;
+    head->next = merge_cut(head->next);
+    struct list_head *now = head, *next = head->next;
+    while (next) {
+        next->prev = now;
+        now = next;
+        next = next->next;
     }
-
-    q_sort(&list_less);
-    q_sort(&list_greater);
-
-    list_add(&pivot->list, head);
-    list_splice(&list_less, head);
-    list_splice_tail(&list_greater, head);
+    now->next = head;
+    head->prev = now;
 }
+
+
+// //先配置一個節點暫存一下
+// struct list_head *tmp_head = malloc(sizeof(struct list_head));
+// struct list_head *ptr = tmp_head, *l1_head, *l2_head;
+// l1_head = list1;
+// l2_head = list2;
+// // l1_head存頭list1的頭，因為尾巴不是null而是接回來
+// //用do-List是因為頭尾相接，傳統的while(l1&&l2)在只有一個元素時會成立，但是我需要串街比較
+// do {
+//     //宣告來取用東西
+//     element_t *list1_ele = list_entry(list1, element_t, list);
+//     element_t *list2_ele = list_entry(list1, element_t, list);
+//     //計算大小作串接，1的元素大於二就
+//     if (strcmp(list1_ele->value, list2_ele->value) > 0) {
+//         ptr->next = list1;
+//         list1->prev = ptr;
+//         list1 = list1->next;
+//     } else  //代表l2比l1大ptr指過去，l2後移
+//     {
+//         //更改兩個指標來搞
+//         ptr->next = list2;
+//         list2->prev = ptr;
+//         list2 = list2->next;
+//     }
+//     ptr = ptr->next;
+// } while (list1 != l1_head || list2 != l2_head);
+// //執行到這邊代表有人到結尾了，令一個串過來
+// ptr->next = l1_head ? list1 : list2;
+// return tmp_head->next;
