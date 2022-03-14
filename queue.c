@@ -1,9 +1,9 @@
+#include "queue.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "harness.h"
-#include "queue.h"
 
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
@@ -300,26 +300,23 @@ void q_reverse(struct list_head *head)
 struct list_head *merge_twolist(struct list_head *list1,
                                 struct list_head *list2)
 {
-    struct list_head *tmp = malloc(sizeof(struct list_head));
-    struct list_head *head = tmp;
+    struct list_head *head = NULL;
+    struct list_head **ptr = &head;
     while (list1 && list2) {
-        //宣告兩個點取用value來比大小
-        element_t *l1_entry = list_entry(list1, element_t, list);
-        element_t *l2_entry = list_entry(list2, element_t, list);
         //比大小<0代表l1小
-        if (strcmp(l1_entry->value, l2_entry->value) < 0) {
-            //記得要讓l1只回去tmp保持雙向鍊結
-            tmp->next = list1;
+        if (strcmp(list_entry(list1, element_t, list)->value,
+                   list_entry(list2, element_t, list)->value) < 0) {
+            *ptr = list1;
             list1 = list1->next;
         } else {
-            tmp->next = list2;
+            *ptr = list2;
             list2 = list2->next;
         }
-        tmp = tmp->next;
+        ptr = &(*ptr)->next;
     }
-    //有一串列到底了，準備接另一串列尾巴
-    tmp->next = list1 ? list1 : list2;
-    return head->next;
+    // l1和l2作or運算並型態轉換存回ptr
+    *ptr = (struct list_head *) ((uintptr_t) list1 | (uintptr_t) list2);
+    return head;
 }
 //將資料切割（divide
 struct list_head *merge_cut(struct list_head *node1)
